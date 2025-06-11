@@ -51,7 +51,8 @@ app.use(cors({
   origin: [
     'http://localhost:4000',
     'http://localhost:4001',
-    'https://car-advertisement-admin.vercel.app',
+    'https://litz.vercel.app',
+    'https://litz-admin.vercel.app',
   ], credentials: true
 }));
 app.use(express.json());
