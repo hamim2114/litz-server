@@ -50,7 +50,7 @@ connectToDatabase();
 app.use(cors({
   origin: [
     'http://localhost:4000',
-    'http://localhost:4001',
+    'http://localhost:3000',
     'https://litz.vercel.app',
     'https://litz-admin.vercel.app',
   ], credentials: true
@@ -66,9 +66,9 @@ const upload = multer({ storage });
 
 // Routes
 app.use('/api/user', userRoute);
-app.use('/api/visits', visitRoute);
-app.use('/api/links', linkRoute);
-app.use('/api/emails', emailRoute);
+app.use('/api/visit', visitRoute);
+app.use('/api/link', linkRoute);
+app.use('/api/email', emailRoute);
 app.use('/api/dashboard', dashboardRoute);
 app.post('/api/file/upload', upload.single('my_file'), handleUpload);
 app.post('/api/file/delete', handleDelete);

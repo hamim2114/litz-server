@@ -1,12 +1,13 @@
 import express from 'express';
 import { createLink, deleteLink, getAllLinks, getLinkBySlug, updateLink } from '../controller/link.controller.js';
+import { verifyToken } from '../middleware/verify.token.js';
 const linkRoute = express.Router();
 
-linkRoute.post('/', createLink);
-linkRoute.get('/', getAllLinks);
+linkRoute.post('/create', verifyToken, createLink);
+linkRoute.get('/all',verifyToken, getAllLinks);
 linkRoute.get('/:slug', getLinkBySlug);
-linkRoute.put('/:id', updateLink);
-linkRoute.delete('/:id', deleteLink);
+linkRoute.put('/update/:id', verifyToken, updateLink);
+linkRoute.delete('/delete/:id', verifyToken, deleteLink);
 
 
 export default linkRoute;

@@ -44,18 +44,22 @@ export const handleReg = async (req, res, next) => {
 
 //admin create user
 export const adminCreateUser = async (req, res, next) => {
-  const { name, email, password } = req.body;
+  const { username, name, email, password } = req.body;
 
   try {
     const user = await userModel.findOne({ email });
+    const usernameExists = await userModel.findOne({ username });
     if (user) {
       return next(createError(400, {email: 'Email already exists!'}));
+    } else if (usernameExists) {
+      return next(createError(400, {username: 'Username already exists! Please try another username.'}));
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new userModel({
+      username,
       name,
       email,
       password: hashedPassword,
@@ -63,10 +67,9 @@ export const adminCreateUser = async (req, res, next) => {
 
     await newUser.save();
 
-    res.status(201).send({message: 'Registration complete!'});
+    res.status(201).send({message: 'User Created Successfully!'});
   } catch (error) {
     if (error.name === 'ValidationError') {
-      // Format validation errors
       const errors = {};
       Object.keys(error.errors).forEach((key) => {
         errors[key] = error.errors[key].message;
@@ -82,7 +85,8 @@ export const adminCreateUser = async (req, res, next) => {
 export const getAllUsers = async (req, res, next) => {
   try {
     const users = await userModel.find().sort({createdAt: -1});
-    res.status(200).send(users);
+    const filteredUsers = users.filter(user => user.role !== 'admin');
+    res.status(200).send(filteredUsers);
   } catch (error) {
     next(error);
   }

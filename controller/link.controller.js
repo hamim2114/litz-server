@@ -1,20 +1,54 @@
 import linkModel from '../models/link.model.js';
 import emailModel from '../models/email.model.js';
 import { Parser } from 'json2csv';
+import { createError } from '../middleware/error.handler.js';
 
 export const createLink = async (req, res, next) => {
-  const { slug, destinationUrl, googleLogin } = req.body;
+  const { slug, destinationUrl, googleLogin, type, isActive, image } = req.body;
   try {
-    const link = new linkModel({ slug, destinationUrl, googleLogin });
+    if (!slug || !destinationUrl || !type) return res.status(400).send({message: 'Missing required fields'} );
+    const link = new linkModel({ slug, destinationUrl, googleLogin, type, isActive, image, user: req.user.id });
     await link.save();
-    res.status(201).send('Link created successfully');
-  } catch (err) {
-    next(err);
+    res.status(201).send({message: 'Link created successfully'});
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      const errors = {};
+      Object.keys(error.errors).forEach((key) => {
+        errors[key] = error.errors[key].message;
+      });
+      return next(createError(400, errors));
+    }
+    next(error);
   }
 };
 
 export const getAllLinks = async (req, res) => {
-  const links = await linkModel.find().sort({ createdAt: -1 });
+  const { search, status, company } = req.query;
+  let query = {};
+
+  if (req.user.role === 'user') {
+    query.user = req.user.id;
+  }
+
+  if (search) {
+    query.slug = { $regex: search, $options: 'i' };
+  }
+
+  if (status) {
+    query.isActive = status === 'active';
+  }
+
+  if (company && req.user.role === 'admin') {
+    query.user = company;
+  }
+
+  let links;
+  if (req.user.role === 'user') {
+    links = await linkModel.find(query).sort({ createdAt: -1 });
+  }
+  if (req.user.role === 'admin') {
+    links = await linkModel.find(query).sort({ createdAt: -1 }).populate('user');
+  }
   
   const linksWithEmailCounts = await Promise.all(
     links.map(async (link) => {
@@ -84,8 +118,8 @@ export const updateLink = async (req, res, next) => {
   const { id } = req.params;
   try {
     const link = await linkModel.findByIdAndUpdate(id, req.body, { new: true });
-    if (!link) return res.status(404).send('Link not found');
-    res.send('Link updated successfully');
+    if (!link) return res.status(404).send({message: 'Link not found'});
+    res.send({message: 'Link updated successfully'});
   } catch (err) {
     next(err);
   }
