@@ -30,7 +30,7 @@ userRoute.get('/all-users', getAllUsers);
 
 userRoute.get('/me', verifyToken, getLoggedUser);
 
-userRoute.put('/user/update', verifyToken, updateLoggedUser);
+userRoute.put('/update', verifyToken, updateLoggedUser);
 
 userRoute.put('/change-password', verifyToken, changePassword);
 

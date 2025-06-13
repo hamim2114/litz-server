@@ -6,17 +6,12 @@ import { createError } from '../middleware/error.handler.js';
 export const createLink = async (req, res, next) => {
   const { slug, destinationUrl, googleLogin, type, isActive, image } = req.body;
   try {
-    if (!slug || !destinationUrl || !type) return res.status(400).send({message: 'Missing required fields'} );
     const link = new linkModel({ slug, destinationUrl, googleLogin, type, isActive, image, user: req.user.id });
     await link.save();
     res.status(201).send({message: 'Link created successfully'});
   } catch (error) {
-    if (error.name === 'ValidationError') {
-      const errors = {};
-      Object.keys(error.errors).forEach((key) => {
-        errors[key] = error.errors[key].message;
-      });
-      return next(createError(400, errors));
+    if (error.code === 11000) {
+      return next(createError(400, {slug: 'Slug already exists'}));
     }
     next(error);
   }
@@ -105,6 +100,9 @@ export const getLinkBySlug = async (req, res, next) => {
       destinationUrl: link.destinationUrl,
       visits: link.visits,
       googleLogin: link.googleLogin,
+      type: link.type,
+      isActive: link.isActive,
+      image: link.image,
       emailList,
       createdAt: link.createdAt,
     });
@@ -117,11 +115,14 @@ export const getLinkBySlug = async (req, res, next) => {
 export const updateLink = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const link = await linkModel.findByIdAndUpdate(id, req.body, { new: true });
+    const link = await linkModel.findByIdAndUpdate(id, req.body, { new: true ,runValidators: true});
     if (!link) return res.status(404).send({message: 'Link not found'});
     res.send({message: 'Link updated successfully'});
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    if (error.code === 11000) {
+      return next(createError(400, {slug: 'Slug already exists'}));
+    }
+    next(error);
   }
 };
 
@@ -129,12 +130,12 @@ export const deleteLink = async (req, res, next) => {
   const { id } = req.params;
   try {
     const link = await linkModel.findByIdAndDelete(id);
-    if (!link) return res.status(404).send('Link not found');
+    if (!link) return res.status(404).send({message: 'Link not found'});
     
     // Delete all emails associated with this link
-    await emailModel.deleteMany({ link: id });
+    // await emailModel.deleteMany({ link: id });
     
-    res.send('Link deleted successfully');
+    res.send({message: 'Link deleted successfully'});
   } catch (err) {
     next(err);
   }
