@@ -5,7 +5,7 @@ const linkRoute = express.Router();
 
 linkRoute.post('/create', verifyToken, createLink);
 linkRoute.get('/all',verifyToken, getAllLinks);
-linkRoute.get('/details/:slug', verifyToken, getLinkBySlug);
+linkRoute.get('/details/:slug', getLinkBySlug);
 linkRoute.put('/update/:id', verifyToken, updateLink);
 linkRoute.delete('/delete/:id', verifyToken, deleteLink);
 
