@@ -79,12 +79,11 @@ export const getLinkBySlug = async (req, res, next) => {
 
     const emailList = emails.map((v) => ({
       email: v.email,
-      birthDay: v.birthDay,
       visitedAt: v.visitedAt,
     }));
 
     if (exportAs === 'csv') {
-      const csvFields = ['email', 'visitedAt', 'birthDay'];
+      const csvFields = ['email', 'visitedAt'];
       const parser = new Parser({ fields: csvFields });
       const csv = parser.parse(emailList);
 

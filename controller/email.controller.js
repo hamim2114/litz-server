@@ -4,7 +4,7 @@ import emailModel from '../models/email.model.js';
 export const recordEmail = async (req, res) => {
   try {
     const { slug } = req.params;
-    const { email, birthDay } = req.body;
+    const { email } = req.body;
     
     const link = await linkModel.findOne({ slug });
     if (!link) return res.status(404).send('Invalid slug');
@@ -24,14 +24,12 @@ export const recordEmail = async (req, res) => {
     // Record new email
     const emailRecord = new emailModel({
       link: link._id,
-      email: email,
-      birthDay: birthDay,
+      email: email
     });
 
     await emailRecord.save();
     return res.status(201).send('Email recorded');
   } catch (error) {
-    console.error('Error in recordEmail:', error);
     return res.status(500).send(error.message);
   }
 };
