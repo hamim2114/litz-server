@@ -2,48 +2,66 @@ import linkModel from '../models/link.model.js';
 import emailModel from '../models/email.model.js';
 import { Parser } from 'json2csv';
 import { createError } from '../middleware/error.handler.js';
+import mongoose from 'mongoose';
 
 export const createLink = async (req, res, next) => {
   const { slug, destinationUrl, googleLogin, type, isActive, image } = req.body;
   try {
-    const link = new linkModel({ slug, destinationUrl, googleLogin, type, isActive, image, user: req.user.id });
+    const link = new linkModel({
+      slug,
+      destinationUrl,
+      googleLogin,
+      type,
+      isActive,
+      image,
+      user: req.user.id,
+    });
     await link.save();
-    res.status(201).send({message: 'Link created successfully'});
+    res.status(201).send({ message: 'Link created successfully' });
   } catch (error) {
     if (error.code === 11000) {
-      return next(createError(400, {slug: 'Slug already exists'}));
+      return next(createError(400, { slug: 'Slug already exists' }));
     }
     next(error);
   }
 };
 
 export const getAllLinks = async (req, res) => {
-  const { search, status, company } = req.query;
+  const { search } = req.query;
   let query = {};
-
+  
+  // For regular users, only show their own links
   if (req.user.role === 'user') {
     query.user = req.user.id;
+    
+    // If search term is provided, search by slug (within their own links)
+    if (search) {
+      query.slug = { $regex: search, $options: 'i' };
+    }
+  }
+  
+  // For admins, search by slug OR username
+  if (search && req.user.role === 'admin') {
+    // First find users that match the username search
+    const matchingUsers = await mongoose.model('User').find({
+      username: { $regex: search, $options: 'i' }
+    }).select('_id');
+    
+    // Create an OR condition to search in slug or user IDs
+    query.$or = [
+      { slug: { $regex: search, $options: 'i' } },
+      { user: { $in: matchingUsers.map(u => u._id) } }
+    ];
   }
 
-  if (search) {
-    query.slug = { $regex: search, $options: 'i' };
-  }
-
-  if (status) {
-    query.isActive = status === 'active';
-  }
-
-  if (company && req.user.role === 'admin') {
-    query.user = company;
-  }
-
-  let links;
-  if (req.user.role === 'user') {
-    links = await linkModel.find(query).sort({ createdAt: -1 });
-  }
+  let linksQuery = linkModel.find(query).sort({ createdAt: -1 });
+  
+  // Populate user for admin (needed for username display)
   if (req.user.role === 'admin') {
-    links = await linkModel.find(query).sort({ createdAt: -1 }).populate('user');
+    linksQuery = linksQuery.populate('user', 'username email _id'); // only populate username
   }
+  
+  const links = await linksQuery.exec();
   
   const linksWithEmailCounts = await Promise.all(
     links.map(async (link) => {
@@ -58,7 +76,6 @@ export const getAllLinks = async (req, res) => {
   res.json(linksWithEmailCounts);
 };
 
-
 export const getLinkBySlug = async (req, res, next) => {
   try {
     const { slug } = req.params;
@@ -66,7 +83,7 @@ export const getLinkBySlug = async (req, res, next) => {
 
     const link = await linkModel.findOne({ slug });
     if (!link) return res.status(404).send('Link not found');
-   
+
     // Build query filter
     const filter = { link: link._id };
     if (from || to) {
@@ -92,7 +109,6 @@ export const getLinkBySlug = async (req, res, next) => {
       return res.send(csv);
     }
 
-
     return res.json({
       _id: link._id,
       slug: link.slug,
@@ -114,12 +130,15 @@ export const getLinkBySlug = async (req, res, next) => {
 export const updateLink = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const link = await linkModel.findByIdAndUpdate(id, req.body, { new: true ,runValidators: true});
-    if (!link) return res.status(404).send({message: 'Link not found'});
-    res.send({message: 'Link updated successfully'});
+    const link = await linkModel.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!link) return res.status(404).send({ message: 'Link not found' });
+    res.send({ message: 'Link updated successfully' });
   } catch (error) {
     if (error.code === 11000) {
-      return next(createError(400, {slug: 'Slug already exists'}));
+      return next(createError(400, { slug: 'Slug already exists' }));
     }
     next(error);
   }
@@ -129,12 +148,12 @@ export const deleteLink = async (req, res, next) => {
   const { id } = req.params;
   try {
     const link = await linkModel.findByIdAndDelete(id);
-    if (!link) return res.status(404).send({message: 'Link not found'});
-    
+    if (!link) return res.status(404).send({ message: 'Link not found' });
+
     // Delete all emails associated with this link
     // await emailModel.deleteMany({ link: id });
-    
-    res.send({message: 'Link deleted successfully'});
+
+    res.send({ message: 'Link deleted successfully' });
   } catch (err) {
     next(err);
   }

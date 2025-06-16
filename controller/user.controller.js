@@ -44,7 +44,7 @@ export const handleReg = async (req, res, next) => {
 
 //admin create user
 export const adminCreateUser = async (req, res, next) => {
-  const { username, name, email, password } = req.body;
+  const {img, username, name, email, password } = req.body;
 
   try {
     const user = await userModel.findOne({ email });
@@ -59,6 +59,7 @@ export const adminCreateUser = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new userModel({
+      img,
       username,
       name,
       email,
@@ -83,8 +84,14 @@ export const adminCreateUser = async (req, res, next) => {
 
 //get all users
 export const getAllUsers = async (req, res, next) => {
+  const {search} = req.query;
   try {
-    const users = await userModel.find().sort({createdAt: -1});
+    const users = await userModel.find({
+      $or: [
+        {username: {$regex: search, $options: 'i'}},
+        {email: {$regex: search, $options: 'i'}},
+      ]
+    }).sort({createdAt: -1});
     const filteredUsers = users.filter(user => user.role !== 'admin');
     res.status(200).send(filteredUsers);
   } catch (error) {
@@ -222,6 +229,32 @@ export const getLoggedUser = async (req, res, next) => {
     next(error);
   }
 };
+
+//admin update user
+export const adminUpdateUser = async (req, res, next) => {
+  const { id } = req.params;
+  const { name,img } = req.body;
+
+  try {
+    await userModel.findByIdAndUpdate(id, { name, img }, { new: true });
+    res.status(200).send({message: 'User updated successfully!'});
+  } catch (error) {
+    next(error);
+  }
+};
+
+//remove user by admin
+export const adminRemoveUser = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    await userModel.findByIdAndDelete(id);
+    res.status(200).send({message: 'User removed successfully!'});
+  } catch (error) {
+    next(error);
+  }
+};  
+
 
 // update logged user
 export const updateLoggedUser = async (req, res, next) => {
