@@ -7,6 +7,7 @@ import {
   forgotPassword,
   getAllUsers,
   getLoggedUser,
+  getSingleUser,
   handleLogin,
   handleReg,
   // resendVerifyEmail,
@@ -26,6 +27,8 @@ userRoute.post('/register', handleReg);
 userRoute.post('/login', handleLogin);
 
 userRoute.get('/all-users', verifyToken,isAdmin, getAllUsers);
+
+userRoute.get('/details/:username',verifyToken, getSingleUser);
 
 // userRoute.post('/verify-email', verifyEmail);
 

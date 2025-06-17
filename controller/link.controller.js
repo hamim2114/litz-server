@@ -3,6 +3,7 @@ import emailModel from '../models/email.model.js';
 import { Parser } from 'json2csv';
 import { createError } from '../middleware/error.handler.js';
 import mongoose from 'mongoose';
+import userModel from '../models/user.model.js';
 
 export const createLink = async (req, res, next) => {
   const { slug, destinationUrl, googleLogin, type, isActive, image } = req.body;
@@ -94,6 +95,8 @@ export const getLinkBySlug = async (req, res, next) => {
 
     const emails = await emailModel.find(filter).sort({ visitedAt: -1 });
 
+    const user = await userModel.findById(link.user);
+
     const emailList = emails.map((v) => ({
       email: v.email,
       visitedAt: v.visitedAt,
@@ -120,6 +123,7 @@ export const getLinkBySlug = async (req, res, next) => {
       image: link.image,
       emailList,
       createdAt: link.createdAt,
+      user: user,
     });
   } catch (err) {
     console.error('Error:', err);

@@ -10,6 +10,7 @@ import {
 } from '../utils/emailSend.js';
 import { createError } from '../middleware/error.handler.js';
 import userModel from '../models/user.model.js';
+import linkModel from '../models/link.model.js';
 
 // register user
 export const handleReg = async (req, res, next) => {
@@ -101,10 +102,19 @@ export const getAllUsers = async (req, res, next) => {
 
 //get single user with all links
 export const getSingleUser = async (req, res, next) => {
-  const { id } = req.params;
+  const { username } = req.params;
   try {
-    const user = await userModel.findById(id).populate('links');
-    res.status(200).send(user);
+    const user = await userModel.findOne({ username });
+    if (!user) {
+      return next(createError(404, 'User not found!'));
+    }
+    // Get all links for this user
+    const userLinks = await linkModel.find({ user: user._id }).sort({ createdAt: -1 });
+    
+    // Convert user to object and add links
+    const userWithLinks = user.toObject();
+    userWithLinks.links = userLinks;
+    res.status(200).send(userWithLinks);
   } catch (error) {
     next(error);
   }
