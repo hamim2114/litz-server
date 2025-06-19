@@ -121,6 +121,7 @@ export const getLinkBySlug = async (req, res, next) => {
       type: link.type,
       isActive: link.isActive,
       image: link.image,
+      buttonColor: link.buttonColor,
       emailList,
       createdAt: link.createdAt,
       user: user,

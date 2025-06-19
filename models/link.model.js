@@ -8,6 +8,7 @@ const linkSchema = new mongoose.Schema(
     destinationUrl: { type: String, required: true },
     description: { type: String },
     type: { type: String,},
+    buttonColor: { type: String, default: '#000000' },
     visits: { type: Number, default: 0 },
     googleLogin: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
