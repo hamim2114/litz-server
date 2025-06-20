@@ -12,6 +12,7 @@ import linkRoute from './route/link.routes.js';
 import emailRoute from './route/email.routes.js';
 import dashboardRoute from './route/dashboard.routes.js';
 import visitRoute from './route/visit.route.js';
+import followUpRouter from './route/followUp.route.js';
 
 
 const app = express();
@@ -69,9 +70,11 @@ app.use('/api/user', userRoute);
 app.use('/api/visit', visitRoute);
 app.use('/api/link', linkRoute);
 app.use('/api/email', emailRoute);
+app.use('/api/follow-up', followUpRouter);
 app.use('/api/dashboard', dashboardRoute);
 app.post('/api/file/upload', upload.single('my_file'), handleUpload);
 app.post('/api/file/delete', handleDelete);
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

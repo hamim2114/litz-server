@@ -105,46 +105,4 @@ export const sendPasswordResetConfirmationEmail = async (email) => {
   await transporter.sendMail(mailOptions);
 };
 
-// send course enrollment confirmation email
-export const sendCourseEnrollmentConfirmation = async (email, courseDetails) => {
-  const templatePath = path.join(
-    __dirname,
-    '../emailTemplate/courseEnrollment.html'
-  );
-  let htmlContent = fs.readFileSync(templatePath, 'utf8');
 
-  htmlContent = htmlContent.replace('{{courseName}}', courseDetails.title)
-    .replace('{{enrollmentStatus}}', courseDetails.enrollmentStatus)
-    .replace('{{paymentStatus}}', courseDetails.paymentStatus);
-
-  const mailOptions = {
-    from: process.env.EMAIL,
-    to: email,
-    subject: `Enrolled in ${courseDetails.title}`,
-    html: htmlContent,
-  };
-
-  await transporter.sendMail(mailOptions);
-};
-
-// send contact notification email to admin
-export const sendContactNotificationEmail = async (contactDetails) => {
-  const templatePath = path.join(
-    __dirname,
-    '../emailTemplate/contactNotificationTemplate.html'
-  );
-  let htmlContent = fs.readFileSync(templatePath, 'utf8');
-
-  htmlContent = htmlContent.replace('{{name}}', contactDetails.name)
-    .replace('{{email}}', contactDetails.email)
-    .replace('{{message}}', contactDetails.message);
-
-  const mailOptions = {
-    from: process.env.EMAIL,
-    to: process.env.EMAIL,
-    subject: 'New Contact Form Submission',
-    html: htmlContent,
-  };
-
-  await transporter.sendMail(mailOptions);
-};
