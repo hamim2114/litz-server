@@ -1,13 +1,11 @@
-  import followupModel from "../models/followup.model.js"
+import followupModel from '../models/followup.model.js';
 
 export const requestFollowUp = async (req, res) => {
-  const { link, subject, message, delayInHours } = req.body;
+  const { link,enabled, subject, message, delayInHours } = req.body;
 
   if (!link || !subject || !message || !delayInHours) {
     return res.status(400).json({ message: 'All fields are required' });
   }
-
-  const user = req.user.id;
 
   //if already exist in the database
   const existingFollowUp = await followupModel.findOne({ link });
@@ -16,13 +14,12 @@ export const requestFollowUp = async (req, res) => {
   }
 
   const followUp = new followupModel({
-    user,
+    user: req.user.id,
     link,
-    enabled: false,
-    approved: false,
+    enabled,
     subject,
     message,
-    delayInHours
+    delayInHours,
   });
 
   await followUp.save();
@@ -34,33 +31,51 @@ export const requestFollowUp = async (req, res) => {
   //   text: `Follow-up requested for Link ID: ${linkId}`
   // });
 
-  res.status(201).json({ message: 'Follow-up request submitted and pending approval.' });
+  res
+    .status(201)
+    .json({ message: 'Follow-up request submitted and pending approval.' });
 };
 
-export const approveFollowUp = async (req, res) => {
-  const { id } = req.params;
-  const followUp = await followupModel.findByIdAndUpdate(id, { approved: true, enabled: true }, { new: true });
-  if (!followUp) return res.status(404).json({ message: 'Follow-up not found' });
-  res.json({ message: 'Follow-up approved and enabled.' });
-};
-
-export const cancelFollowUp = async (req, res) => {
-  const { id } = req.params;
-  const followUp = await followupModel.findByIdAndUpdate(id, { enabled: false, approved: false }, { new: true });
-  if (!followUp) return res.status(404).json({ message: 'Follow-up not found' });
-  res.json({ message: 'Follow-up cancelled.' });
-};
 
 export const getAllFollowUps = async (req, res) => {
+  const { slug, status } = req.query;
+  let query = {};
 
-  if (req.user.role === 'admin') {
-    const followUps = await followupModel.find().sort({ createdAt: -1 }).populate('link').populate('user');
-    res.json(followUps);
-  } 
+  // Add user filter based on role
   if (req.user.role === 'user') {
-    const followUps = await followupModel.find({ user: req.user.id }).sort({ createdAt: -1 }).populate('link');
-    res.json(followUps);
+    query.user = req.user.id;
   }
+
+  // Add status filter if provided
+  if (status) {
+    if (status === 'enabled') {
+      query.enabled = true;
+    } else if (status === 'disabled') {
+      query.enabled = false;
+    } else if (status === 'approved') {
+      query.approved = true;
+    } else if (status === 'pending') {
+      query.approved = false;
+    }
+  }
+
+  // Get followups with optional slug filter
+  const followUps = await followupModel
+    .find(query)
+    .sort({ createdAt: -1 })
+    .populate({
+      path: 'link',
+      match: slug ? { slug: slug } : {},
+      select: 'slug'
+    })
+    .populate(req.user.role === 'admin' ? 'user' : '');
+
+  // Filter out followups where link doesn't match slug
+  const filteredFollowUps = slug 
+    ? followUps.filter(followUp => followUp.link)
+    : followUps;
+
+  res.json(filteredFollowUps);
 };
 
 export const getFollowUpById = async (req, res) => {
@@ -71,16 +86,21 @@ export const getFollowUpById = async (req, res) => {
 
 export const updateFollowUp = async (req, res) => {
   const { id } = req.params;
-  const { enabled, approved } = req.body;
-  const followUp = await followupModel.findByIdAndUpdate(id, { enabled, approved }, { new: true });
-  res.json(followUp);
+  const { link, approved, enabled, subject, message, delayInHours } = req.body;
+  const followUp = await followupModel.findByIdAndUpdate(
+    id,
+    { link, approved, enabled, subject, message, delayInHours },
+    { new: true }
+  );
+  if (!followUp)
+    return res.status(404).json({ message: 'Follow-up not found' });
+  res.json({ message: 'Follow-up updated.' });
 };
 
 export const deleteFollowUp = async (req, res) => {
   const { id } = req.params;
   const followUp = await followupModel.findByIdAndDelete(id);
-  if (!followUp) return res.status(404).json({ message: 'Follow-up not found' });
+  if (!followUp)
+    return res.status(404).json({ message: 'Follow-up not found' });
   res.json({ message: 'Follow-up deleted.' });
 };
-
-
