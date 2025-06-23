@@ -1,18 +1,21 @@
 import linkModel from '../models/link.model.js';
 import emailModel from '../models/email.model.js';
+import followupModel from '../models/followup.model.js';
+import { sendEmail } from '../corn/followUpCorn.js';
+import userModel from '../models/user.model.js';
 
 export const recordEmail = async (req, res) => {
   try {
     const { slug } = req.params;
     const { email } = req.body;
-    
+
     const link = await linkModel.findOne({ slug });
     if (!link) return res.status(404).send('Invalid slug');
 
     // Check if email already exists for this link
-    // const existingEmail = await emailModel.findOne({ 
+    // const existingEmail = await emailModel.findOne({
     //   link: link._id,
-    //   email: email 
+    //   email: email
     // });
 
     // if (existingEmail) {
@@ -24,10 +27,31 @@ export const recordEmail = async (req, res) => {
     // Record new email
     const emailRecord = new emailModel({
       link: link._id,
-      email: email
+      email: email,
     });
-
     await emailRecord.save();
+
+    // const followUp = await followupModel.findOne({ link: link._id });
+
+    //send the followup email immediately
+    // const user = await userModel.findOne({ _id: followUp.user });
+    // const sendImmediately = true;
+    // if (sendImmediately) {
+    //   const emails = await emailModel.find({ link: link._id });
+    //   for (const emailEntry of emails) {
+    //     // if (!emailEntry.followUpSent) {
+    //     await sendEmail({
+    //       username: user.username,
+    //       to: emailEntry.email,
+    //       subject: followUp.subject,
+    //       text: followUp.message,
+    //     });
+    //     emailEntry.followUpSent = true;
+    //     await emailEntry.save();
+    //     // }
+    //   }
+    // }
+
     return res.status(201).send('Email recorded');
   } catch (error) {
     return res.status(500).send(error.message);
@@ -39,11 +63,11 @@ export const getEmailsBySlug = async (req, res) => {
     const { slug } = req.params;
     const link = await linkModel.findOne({ slug });
     if (!link) return res.status(404).json({ error: 'Invalid slug' });
-    
+
     const emails = await emailModel
       .find({ link: link._id })
       .sort({ visitedAt: -1 });
-    
+
     return res.json(emails);
   } catch (error) {
     console.error('Error getting emails:', error);

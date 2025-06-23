@@ -100,6 +100,7 @@ export const getLinkBySlug = async (req, res, next) => {
     const emailList = emails.map((v) => ({
       email: v.email,
       visitedAt: v.visitedAt,
+      followUpSent: v.followUpSent,
     }));
 
     if (exportAs === 'csv') {

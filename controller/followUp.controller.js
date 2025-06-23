@@ -10,7 +10,12 @@ export const requestFollowUp = async (req, res) => {
   //if already exist in the database
   const existingFollowUp = await followupModel.findOne({ link });
   if (existingFollowUp) {
-    return res.status(400).json({ message: 'Follow-up already exists' });
+    return res.status(400).json({ slug: 'Follow-up already exists' });
+  }
+
+  //delay in hours must be between 1 and 72
+  if (delayInHours < 1 || delayInHours > 72) {
+    return res.status(400).json({ delayInHours: 'Delay must be between 1 and 72 hours' });
   }
 
   const followUp = new followupModel({
@@ -87,6 +92,13 @@ export const getFollowUpById = async (req, res) => {
 export const updateFollowUp = async (req, res) => {
   const { id } = req.params;
   const { link, approved, enabled, subject, message, delayInHours } = req.body;
+
+  if (delayInHours) {
+    if (delayInHours < 1 || delayInHours > 72) {
+      return res.status(400).json({ delayInHours: 'Delay must be between 1 and 72 hours' });
+    }
+  }
+
   const followUp = await followupModel.findByIdAndUpdate(
     id,
     { link, approved, enabled, subject, message, delayInHours },
