@@ -1,7 +1,7 @@
 import followupModel from '../models/followup.model.js';
 
 export const requestFollowUp = async (req, res) => {
-  const { link,enabled, subject, message, delayInMinutes } = req.body;
+  const { link,enabled,approved, subject, message, delayInMinutes } = req.body;
 
   //if already exist in the database
   const existingFollowUp = await followupModel.findOne({ link });
@@ -18,6 +18,7 @@ export const requestFollowUp = async (req, res) => {
     user: req.user.id,
     link,
     enabled,
+    approved,
     subject,
     message,
     delayInMinutes,
