@@ -7,7 +7,7 @@ const followUpSchema = new mongoose.Schema({
   approved: { type: Boolean, default: false },
   subject: { type: String },
   message: { type: String },
-  delayInHours: { type: Number },
+  delayInMinutes: { type: Number, default: 0 },
 }, { 
   timestamps: true,
   index: { user: 1, link: 1 },

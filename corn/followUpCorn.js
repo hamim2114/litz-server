@@ -20,28 +20,34 @@ export const sendEmail = async ({username, to, subject, text }) => {
 //run every 10 minutes
 // '*/10 * * * *'
 
-cron.schedule('*/10 * * * *', async () => {
+cron.schedule('* * * * *', async () => {
   const now = new Date();
-  
+  // console.log('Running follow-up cron...');
+
   const followUps = await followupModel.find({ approved: true, enabled: true });
 
   for (const followUp of followUps) {
-    const emails = await emailModel.find({ link: followUp.link});
-
-    const user = await userModel.findOne({ _id: followUp.user });
+    const emails = await emailModel.find({ link: followUp.link });
+    const user = await userModel.findById(followUp.user);
 
     for (const emailEntry of emails) {
-      const timePassed = (now - new Date(emailEntry.visitedAt)) / 3600000;
-      if (timePassed >= followUp.delayInHours && !emailEntry.followUpSent) {
+      // const timePassedInHours = (now - new Date(emailEntry.visitedAt)) / 3600000; // hours
+      const timePassedInMinutes = (now - new Date(emailEntry.visitedAt)) / 60000; // minutes
+
+      if (
+        (followUp.delayInMinutes === 0 || timePassedInMinutes >= followUp.delayInMinutes) &&
+        !emailEntry.followUpSent
+      ) {
         await sendEmail({
           username: user.username,
           to: emailEntry.email,
           subject: followUp.subject,
-          text: followUp.message
+          text: followUp.message,
         });
 
         emailEntry.followUpSent = true;
         await emailEntry.save();
+        // console.log(`Sent follow-up to ${emailEntry.email}`);
       }
     }
   }

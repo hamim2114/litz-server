@@ -31,31 +31,50 @@ export const recordEmail = async (req, res) => {
     });
     await emailRecord.save();
 
-    // const followUp = await followupModel.findOne({ link: link._id });
+    const followUp = await followupModel.findOne({ link: link._id });
 
     //send the followup email immediately
-    // const user = await userModel.findOne({ _id: followUp.user });
-    // const sendImmediately = true;
-    // if (sendImmediately) {
-    //   const emails = await emailModel.find({ link: link._id });
-    //   for (const emailEntry of emails) {
-    //     // if (!emailEntry.followUpSent) {
-    //     await sendEmail({
-    //       username: user.username,
-    //       to: emailEntry.email,
-    //       subject: followUp.subject,
-    //       text: followUp.message,
-    //     });
-    //     emailEntry.followUpSent = true;
-    //     await emailEntry.save();
-    //     // }
-    //   }
-    // }
+    const user = await userModel.findOne({ _id: followUp.user });
+    if (followUp.delayInMinutes === 0) {
+      if (followUp.enabled && followUp.approved) {
+        const emails = await emailModel.find({ link: link._id });
+        for (const emailEntry of emails) {
+          if (!emailEntry.followUpSent) {
+            await sendEmail({
+              username: user.username,
+              to: emailEntry.email,
+              subject: followUp.subject,
+              text: followUp.message,
+            });
+            emailEntry.followUpSent = true;
+            await emailEntry.save();
+          }
+        }
+      }
+    }
 
     return res.status(201).send('Email recorded');
   } catch (error) {
     return res.status(500).send(error.message);
   }
+};
+
+//make followUpSent  false for selected emails
+export const makeFollowUpSentFalse = async (req, res) => {
+  const { emailIds } = req.body;
+  console.log(emailIds);
+  await emailModel.updateMany(
+    { _id: { $in: emailIds } },
+    { followUpSent: false }
+  );
+  return res.status(200).send({ message: 'Follow-up sent status updated' });
+};
+
+//selected emails delete
+export const deleteEmails = async (req, res) => {
+  const { emailIds } = req.body;
+  await emailModel.deleteMany({ _id: { $in: emailIds } });
+  return res.status(200).send({ message: 'Emails deleted' });
 };
 
 export const getEmailsBySlug = async (req, res) => {

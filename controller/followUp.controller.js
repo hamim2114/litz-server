@@ -1,11 +1,7 @@
 import followupModel from '../models/followup.model.js';
 
 export const requestFollowUp = async (req, res) => {
-  const { link,enabled, subject, message, delayInHours } = req.body;
-
-  if (!link || !subject || !message || !delayInHours) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
+  const { link,enabled, subject, message, delayInMinutes } = req.body;
 
   //if already exist in the database
   const existingFollowUp = await followupModel.findOne({ link });
@@ -14,8 +10,8 @@ export const requestFollowUp = async (req, res) => {
   }
 
   //delay in hours must be between 1 and 72
-  if (delayInHours < 1 || delayInHours > 72) {
-    return res.status(400).json({ delayInHours: 'Delay must be between 1 and 72 hours' });
+  if (delayInMinutes < 0 || delayInMinutes > 1440) {
+    return res.status(400).json({ delayInMinutes: 'Delay must be between 0 and 1440 minutes' });
   }
 
   const followUp = new followupModel({
@@ -24,7 +20,7 @@ export const requestFollowUp = async (req, res) => {
     enabled,
     subject,
     message,
-    delayInHours,
+    delayInMinutes,
   });
 
   await followUp.save();
@@ -91,17 +87,17 @@ export const getFollowUpById = async (req, res) => {
 
 export const updateFollowUp = async (req, res) => {
   const { id } = req.params;
-  const { link, approved, enabled, subject, message, delayInHours } = req.body;
+  const { link, approved, enabled, subject, message, delayInMinutes } = req.body;
 
-  if (delayInHours) {
-    if (delayInHours < 1 || delayInHours > 72) {
-      return res.status(400).json({ delayInHours: 'Delay must be between 1 and 72 hours' });
+  if (delayInMinutes) {
+    if (delayInMinutes < 0 || delayInMinutes > 1440) {
+      return res.status(400).json({ delayInMinutes: 'Delay must be between 0 and 1440 minutes' });
     }
   }
 
   const followUp = await followupModel.findByIdAndUpdate(
     id,
-    { link, approved, enabled, subject, message, delayInHours },
+    { link, approved, enabled, subject, message, delayInMinutes },
     { new: true }
   );
   if (!followUp)

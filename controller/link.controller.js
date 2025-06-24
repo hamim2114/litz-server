@@ -98,6 +98,7 @@ export const getLinkBySlug = async (req, res, next) => {
     const user = await userModel.findById(link.user);
 
     const emailList = emails.map((v) => ({
+      _id: v._id,
       email: v.email,
       visitedAt: v.visitedAt,
       followUpSent: v.followUpSent,

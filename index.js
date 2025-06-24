@@ -13,6 +13,7 @@ import emailRoute from './route/email.routes.js';
 import dashboardRoute from './route/dashboard.routes.js';
 import visitRoute from './route/visit.route.js';
 import followUpRouter from './route/followUp.route.js';
+import './corn/followUpCorn.js';
 
 
 const app = express();
