@@ -38,12 +38,7 @@ cron.schedule('* * * * *', async () => {
         (followUp.delayInMinutes === 0 || timePassedInMinutes >= followUp.delayInMinutes) &&
         !emailEntry.followUpSent
       ) {
-        await sendEmail({
-          username: user.username,
-          to: emailEntry.email,
-          subject: followUp.subject,
-          text: followUp.message,
-        });
+        await sendFollowupEmail(emailEntry.email, followUp.subject, followUp.message, followUp.img);
 
         emailEntry.followUpSent = true;
         await emailEntry.save();

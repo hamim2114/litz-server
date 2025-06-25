@@ -1,8 +1,8 @@
 import linkModel from '../models/link.model.js';
 import emailModel from '../models/email.model.js';
 import followupModel from '../models/followup.model.js';
-import { sendEmail } from '../corn/followUpCorn.js';
 import userModel from '../models/user.model.js';
+import { sendFollowupEmail } from '../utils/emailSend.js';
 
 export const recordEmail = async (req, res) => {
   try {
@@ -40,12 +40,13 @@ export const recordEmail = async (req, res) => {
         const emails = await emailModel.find({ link: link._id });
         for (const emailEntry of emails) {
           if (!emailEntry.followUpSent) {
-            await sendEmail({
-              username: user.username,
-              to: emailEntry.email,
-              subject: followUp.subject,
-              text: followUp.message,
-            });
+            await sendFollowupEmail(
+              user.username,
+              emailEntry.email,
+              followUp.subject,
+              followUp.message,
+              followUp.img
+            );
             emailEntry.followUpSent = true;
             await emailEntry.save();
           }

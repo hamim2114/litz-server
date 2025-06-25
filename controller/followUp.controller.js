@@ -1,7 +1,7 @@
 import followupModel from '../models/followup.model.js';
 
 export const requestFollowUp = async (req, res) => {
-  const { link,enabled,approved, subject, message, delayInMinutes } = req.body;
+  const { link,enabled,approved, subject, message, delayInMinutes, img } = req.body;
 
   //if already exist in the database
   const existingFollowUp = await followupModel.findOne({ link });
@@ -22,6 +22,7 @@ export const requestFollowUp = async (req, res) => {
     subject,
     message,
     delayInMinutes,
+    img,
   });
 
   await followUp.save();
@@ -35,7 +36,7 @@ export const requestFollowUp = async (req, res) => {
 
   res
     .status(201)
-    .json({ message: 'Follow-up request submitted and pending approval.' });
+    .json({ message: 'Follow-up Created.' });
 };
 
 

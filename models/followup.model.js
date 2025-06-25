@@ -7,6 +7,7 @@ const followUpSchema = new mongoose.Schema({
   approved: { type: Boolean, default: false },
   subject: { type: String },
   message: { type: String },
+  img: { type: String },
   delayInMinutes: { type: Number, default: 0 },
 }, { 
   timestamps: true,

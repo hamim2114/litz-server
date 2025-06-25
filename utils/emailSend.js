@@ -19,6 +19,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+//send followup email
+export const sendFollowupEmail = async (username, email, subject, message, img) => {
+  const templatePath = path.join(
+    __dirname,
+    '../emailTemplate/followupTemplate.html'
+  );
+  let htmlContent = fs.readFileSync(templatePath, 'utf8');
+
+  htmlContent = htmlContent.replace('{{subject}}', subject);
+  htmlContent = htmlContent.replace('{{message}}', message);
+  htmlContent = htmlContent.replace('{{img}}', img);
+
+  const mailOptions = {
+    from: `${username} <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: subject,
+    html: htmlContent,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 // send verification email
 export const sendVerificationEmail = async (email, token) => {
   const templatePath = path.join(
