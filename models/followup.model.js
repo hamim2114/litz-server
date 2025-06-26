@@ -8,6 +8,7 @@ const followUpSchema = new mongoose.Schema({
   subject: { type: String },
   message: { type: String },
   img: { type: String },
+  destinationUrl: { type: String },
   delayInMinutes: { type: Number, default: 0 },
 }, { 
   timestamps: true,

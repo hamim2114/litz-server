@@ -11,6 +11,7 @@ import {
 import { createError } from '../middleware/error.handler.js';
 import userModel from '../models/user.model.js';
 import linkModel from '../models/link.model.js';
+import followupModel from '../models/followup.model.js';
 
 // register user
 export const handleReg = async (req, res, next) => {
@@ -243,10 +244,16 @@ export const getLoggedUser = async (req, res, next) => {
 //admin update user
 export const adminUpdateUser = async (req, res, next) => {
   const { id } = req.params;
-  const { name,img } = req.body;
+  const { name,img,isBlocked } = req.body;
+
+  // if user is isBlocked, all links status will be deactive
+  if (isBlocked) {
+    await linkModel.updateMany({ user: id }, { isActive: false });
+    await followupModel.updateMany({ user: id }, { enabled: false });
+  }
 
   try {
-    await userModel.findByIdAndUpdate(id, { name, img }, { new: true });
+    await userModel.findByIdAndUpdate(id, { name, img, isBlocked }, { new: true });
     res.status(200).send({message: 'User updated successfully!'});
   } catch (error) {
     next(error);

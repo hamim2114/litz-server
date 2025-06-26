@@ -1,7 +1,7 @@
 import followupModel from '../models/followup.model.js';
 
 export const requestFollowUp = async (req, res) => {
-  const { link,enabled,approved, subject, message, delayInMinutes, img } = req.body;
+  const { link,enabled,approved, subject, message, delayInMinutes, img, destinationUrl } = req.body;
 
   //if already exist in the database
   const existingFollowUp = await followupModel.findOne({ link });
@@ -23,6 +23,7 @@ export const requestFollowUp = async (req, res) => {
     message,
     delayInMinutes,
     img,
+    destinationUrl,
   });
 
   await followUp.save();
@@ -89,7 +90,7 @@ export const getFollowUpById = async (req, res) => {
 
 export const updateFollowUp = async (req, res) => {
   const { id } = req.params;
-  const { link, approved, enabled, subject, message, delayInMinutes } = req.body;
+  const { link, approved, enabled, subject, message, delayInMinutes, img, destinationUrl } = req.body;
 
   if (delayInMinutes) {
     if (delayInMinutes < 0 || delayInMinutes > 1440) {
@@ -99,7 +100,7 @@ export const updateFollowUp = async (req, res) => {
 
   const followUp = await followupModel.findByIdAndUpdate(
     id,
-    { link, approved, enabled, subject, message, delayInMinutes },
+    { link, approved, enabled, subject, message, delayInMinutes, img, destinationUrl },
     { new: true }
   );
   if (!followUp)

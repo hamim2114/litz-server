@@ -3,19 +3,7 @@ import cron from 'node-cron';
 import followupModel from '../models/followup.model.js';
 import userModel from '../models/user.model.js';
 import emailModel from '../models/email.model.js';
-import nodemailer from 'nodemailer';
-
-export const sendEmail = async ({username, to, subject, text }) => {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  await transporter.sendMail({ from: `${username} <${process.env.EMAIL_USER}>`, to, subject, text });
-};
+import { sendFollowupEmail } from '../utils/emailSend.js';
 
 //run every 10 minutes
 // '*/10 * * * *'
@@ -38,11 +26,11 @@ cron.schedule('* * * * *', async () => {
         (followUp.delayInMinutes === 0 || timePassedInMinutes >= followUp.delayInMinutes) &&
         !emailEntry.followUpSent
       ) {
-        await sendFollowupEmail(emailEntry.email, followUp.subject, followUp.message, followUp.img);
+        await sendFollowupEmail(user.username, emailEntry.email, followUp.subject, followUp.message, followUp.img, followUp.destinationUrl);
 
         emailEntry.followUpSent = true;
         await emailEntry.save();
-        // console.log(`Sent follow-up to ${emailEntry.email}`);
+        console.log(`Sent follow-up to ${emailEntry.email}`);
       }
     }
   }

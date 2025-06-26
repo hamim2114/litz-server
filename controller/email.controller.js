@@ -36,7 +36,7 @@ export const recordEmail = async (req, res) => {
     //send the followup email immediately
     const user = await userModel.findOne({ _id: followUp.user });
     if (followUp.delayInMinutes === 0) {
-      if (followUp.enabled && followUp.approved) {
+      if (followUp.enabled && followUp.approved && user.isBlocked === false) {
         const emails = await emailModel.find({ link: link._id });
         for (const emailEntry of emails) {
           if (!emailEntry.followUpSent) {
@@ -45,7 +45,8 @@ export const recordEmail = async (req, res) => {
               emailEntry.email,
               followUp.subject,
               followUp.message,
-              followUp.img
+              followUp.img,
+              followUp.destinationUrl,
             );
             emailEntry.followUpSent = true;
             await emailEntry.save();

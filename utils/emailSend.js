@@ -20,7 +20,7 @@ const transporter = nodemailer.createTransport({
 });
 
 //send followup email
-export const sendFollowupEmail = async (username, email, subject, message, img) => {
+export const sendFollowupEmail = async (username, email, subject, message, img, destinationUrl) => {
   const templatePath = path.join(
     __dirname,
     '../emailTemplate/followupTemplate.html'
@@ -30,7 +30,7 @@ export const sendFollowupEmail = async (username, email, subject, message, img) 
   htmlContent = htmlContent.replace('{{subject}}', subject);
   htmlContent = htmlContent.replace('{{message}}', message);
   htmlContent = htmlContent.replace('{{img}}', img);
-
+  htmlContent = htmlContent.replace('{{destinationUrl}}', destinationUrl);
   const mailOptions = {
     from: `${username} <${process.env.EMAIL_USER}>`,
     to: email,

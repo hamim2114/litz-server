@@ -28,7 +28,8 @@ const UserSchema = new Schema(
     password: {
       type: String,
       required: true
-    }
+    },
+    isBlocked: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
