@@ -12,6 +12,7 @@ const linkSchema = new mongoose.Schema(
     visits: { type: Number, default: 0 },
     googleLogin: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    googleLoginNotForced: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

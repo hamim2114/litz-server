@@ -128,6 +128,7 @@ export const getLinkBySlug = async (req, res, next) => {
       emailList,
       createdAt: link.createdAt,
       user: user,
+      googleLoginNotForced: link.googleLoginNotForced,
     });
   } catch (err) {
     console.error('Error:', err);
