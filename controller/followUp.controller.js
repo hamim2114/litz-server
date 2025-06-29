@@ -52,14 +52,10 @@ export const getAllFollowUps = async (req, res) => {
 
   // Add status filter if provided
   if (status) {
-    if (status === 'enabled') {
+    if (status === 'active') {
       query.enabled = true;
-    } else if (status === 'disabled') {
+    } else if (status === 'inactive') {
       query.enabled = false;
-    } else if (status === 'approved') {
-      query.approved = true;
-    } else if (status === 'pending') {
-      query.approved = false;
     }
   }
 

@@ -28,48 +28,59 @@ export const createLink = async (req, res, next) => {
 };
 
 export const getAllLinks = async (req, res) => {
-  const { search } = req.query;
+  const { search, status } = req.query;
   let query = {};
-  
+  console.log(search, status);
+
+  if (status) {
+    if (status === 'active') {
+      query.isActive = true;
+    } else if (status === 'inactive') {
+      query.isActive = false;
+    }
+  }
   // For regular users, only show their own links
   if (req.user.role === 'user') {
     query.user = req.user.id;
-    
+
     // If search term is provided, search by slug (within their own links)
     if (search) {
       query.slug = { $regex: search, $options: 'i' };
     }
   }
-  
+
   // For admins, search by slug OR username
   if (search && req.user.role === 'admin') {
     // First find users that match the username search
-    const matchingUsers = await mongoose.model('User').find({
-      username: { $regex: search, $options: 'i' }
-    }).select('_id');
-    
+    const matchingUsers = await mongoose
+      .model('User')
+      .find({
+        username: { $regex: search, $options: 'i' },
+      })
+      .select('_id');
+
     // Create an OR condition to search in slug or user IDs
     query.$or = [
       { slug: { $regex: search, $options: 'i' } },
-      { user: { $in: matchingUsers.map(u => u._id) } }
+      { user: { $in: matchingUsers.map((u) => u._id) } },
     ];
   }
 
   let linksQuery = linkModel.find(query).sort({ createdAt: -1 });
-  
+
   // Populate user for admin (needed for username display)
   if (req.user.role === 'admin') {
     linksQuery = linksQuery.populate('user', 'username email _id'); // only populate username
   }
-  
+
   const links = await linksQuery.exec();
-  
+
   const linksWithEmailCounts = await Promise.all(
     links.map(async (link) => {
       const emailCount = await emailModel.countDocuments({ link: link._id });
       return {
         ...link.toObject(),
-        emailCount
+        emailCount,
       };
     })
   );
@@ -160,7 +171,7 @@ export const deleteLink = async (req, res, next) => {
     if (!link) return res.status(404).send({ message: 'Link not found' });
 
     // Delete all emails associated with this link
-    // await emailModel.deleteMany({ link: id });
+    await emailModel.deleteMany({ link: id });
 
     res.send({ message: 'Link deleted successfully' });
   } catch (err) {

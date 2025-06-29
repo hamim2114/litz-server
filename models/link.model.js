@@ -10,7 +10,7 @@ const linkSchema = new mongoose.Schema(
     type: { type: String,},
     buttonColor: { type: String, default: '#000000' },
     visits: { type: Number, default: 0 },
-    googleLogin: { type: Boolean, default: false },
+    googleLogin: { type: String },
     isActive: { type: Boolean, default: true },
     googleLoginNotForced: { type: Boolean, default: true },
   },
