@@ -30,7 +30,6 @@ export const createLink = async (req, res, next) => {
 export const getAllLinks = async (req, res) => {
   const { search, status } = req.query;
   let query = {};
-  console.log(search, status);
 
   if (status) {
     if (status === 'active') {
