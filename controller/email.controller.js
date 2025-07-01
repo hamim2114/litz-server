@@ -3,6 +3,7 @@ import emailModel from '../models/email.model.js';
 import followupModel from '../models/followup.model.js';
 import userModel from '../models/user.model.js';
 import { sendFollowupEmail } from '../utils/emailSend.js';
+import { calculateNextScheduledDate } from '../utils/followUpUtils.js';
 
 export const recordEmail = async (req, res) => {
   try {
@@ -24,32 +25,46 @@ export const recordEmail = async (req, res) => {
     //   });
     // }
 
+    // Get follow-up settings for this link
+    const followUp = await followupModel.findOne({ link: link._id });
+    
+    // Calculate scheduled follow-up date if it's a scheduled follow-up
+    let scheduledFollowUpDate = null;
+    if (followUp && followUp.followUpType === 'scheduled' && followUp.scheduledTime) {
+      scheduledFollowUpDate = calculateNextScheduledDate(
+        followUp.scheduledTime,
+        followUp.scheduledFrequency,
+        followUp.scheduledDayOfWeek
+      );
+    }
+
     // Record new email
     const emailRecord = new emailModel({
       link: link._id,
       email: email,
+      scheduledFollowUpDate: scheduledFollowUpDate,
     });
     await emailRecord.save();
 
-    const followUp = await followupModel.findOne({ link: link._id });
-
-    //send the followup email immediately
-    const user = await userModel.findOne({ _id: followUp.user });
-    if (followUp.delayInMinutes === 0) {
-      if (followUp.enabled && followUp.approved && user.isBlocked === false) {
-        const emails = await emailModel.find({ link: link._id });
-        for (const emailEntry of emails) {
-          if (!emailEntry.followUpSent) {
-            await sendFollowupEmail(
-              user.username,
-              emailEntry.email,
-              followUp.subject,
-              followUp.message,
-              followUp.img,
-              followUp.destinationUrl,
-            );
-            emailEntry.followUpSent = true;
-            await emailEntry.save();
+    // Handle immediate casual follow-up (existing logic)
+    if (followUp && followUp.followUpType === 'casual') {
+      const user = await userModel.findOne({ _id: followUp.user });
+      if (followUp.delayInMinutes === 0) {
+        if (followUp.enabled && followUp.approved && user.isBlocked === false) {
+          const emails = await emailModel.find({ link: link._id });
+          for (const emailEntry of emails) {
+            if (!emailEntry.followUpSent) {
+              await sendFollowupEmail(
+                user.username,
+                emailEntry.email,
+                followUp.subject,
+                followUp.message,
+                followUp.img,
+                followUp.destinationUrl,
+              );
+              emailEntry.followUpSent = true;
+              await emailEntry.save();
+            }
           }
         }
       }
@@ -64,7 +79,7 @@ export const recordEmail = async (req, res) => {
 //make followUpSent  false for selected emails
 export const makeFollowUpSentFalse = async (req, res) => {
   const { emailIds } = req.body;
-  console.log(emailIds);
+
   await emailModel.updateMany(
     { _id: { $in: emailIds } },
     { followUpSent: false }

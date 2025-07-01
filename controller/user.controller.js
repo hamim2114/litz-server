@@ -16,7 +16,7 @@ import followupModel from '../models/followup.model.js';
 // register user
 export const handleReg = async (req, res, next) => {
   const { name, email, password } = req.body;
-  console.log(req.body);
+
   if (!name || !email || !password) {
     return next(createError(400, 'All fields are required!'));
   }
