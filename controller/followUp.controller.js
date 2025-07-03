@@ -1,19 +1,17 @@
 import followupModel from '../models/followup.model.js';
 
 export const requestFollowUp = async (req, res) => {
-  const { 
-    link, 
-    enabled, 
-    approved, 
-    subject, 
-    message, 
-    delayInMinutes, 
-    img, 
+  const {
+    link,
+    enabled,
+    approved,
+    subject,
+    delayInMinutes,
+    img,
     destinationUrl,
     followUpType,
-    scheduledTime,
-    scheduledFrequency,
-    scheduledDayOfWeek
+    sendHour,
+    scheduleType,
   } = req.body;
 
   //if already exist in the database
@@ -21,34 +19,20 @@ export const requestFollowUp = async (req, res) => {
   if (existingFollowUp) {
     return res.status(400).json({ slug: 'Follow-up already exists' });
   }
+  if (!followUpType) {
+    return res.status(400).json({ followUpType: 'Follow-up type is required' });
+  }
+
+  if (!link) {
+    return res.status(400).json({ link: 'Link is required' });
+  }
 
   // Validate casual follow-up fields
   if (followUpType === 'casual' || !followUpType) {
     if (delayInMinutes < 0 || delayInMinutes > 1440) {
-      return res.status(400).json({ delayInMinutes: 'Delay must be between 0 and 1440 minutes' });
-    }
-  }
-
-  // Validate scheduled follow-up fields
-  if (followUpType === 'scheduled') {
-    if (!scheduledTime) {
-      return res.status(400).json({ scheduledTime: 'Scheduled time is required for scheduled follow-ups' });
-    }
-    
-    // Validate time format (HH:MM)
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(scheduledTime)) {
-      return res.status(400).json({ scheduledTime: 'Time must be in HH:MM format (e.g., 20:00)' });
-    }
-
-    if (!scheduledFrequency || !['daily', 'weekly'].includes(scheduledFrequency)) {
-      return res.status(400).json({ scheduledFrequency: 'Frequency must be either "daily" or "weekly"' });
-    }
-
-    if (scheduledFrequency === 'weekly') {
-      if (scheduledDayOfWeek === undefined || scheduledDayOfWeek < 0 || scheduledDayOfWeek > 6) {
-        return res.status(400).json({ scheduledDayOfWeek: 'Day of week must be between 0 (Sunday) and 6 (Saturday)' });
-      }
+      return res
+        .status(400)
+        .json({ delayInMinutes: 'Delay must be between 0 and 1440 minutes' });
     }
   }
 
@@ -58,14 +42,12 @@ export const requestFollowUp = async (req, res) => {
     enabled,
     approved,
     subject,
-    message,
     delayInMinutes,
     img,
     destinationUrl,
-    followUpType: followUpType || 'casual',
-    scheduledTime,
-    scheduledFrequency,
-    scheduledDayOfWeek,
+    followUpType,
+    sendHour,
+    scheduleType,
   });
 
   await followUp.save();
@@ -77,11 +59,8 @@ export const requestFollowUp = async (req, res) => {
   //   text: `Follow-up requested for Link ID: ${linkId}`
   // });
 
-  res
-    .status(201)
-    .json({ message: 'Follow-up Created.' });
+  res.status(201).json({ message: 'Follow-up Created.' });
 };
-
 
 export const getAllFollowUps = async (req, res) => {
   const { slug, status } = req.query;
@@ -108,13 +87,13 @@ export const getAllFollowUps = async (req, res) => {
     .populate({
       path: 'link',
       match: slug ? { slug: slug } : {},
-      select: 'slug'
+      select: 'slug',
     })
     .populate(req.user.role === 'admin' ? 'user' : '');
 
   // Filter out followups where link doesn't match slug
-  const filteredFollowUps = slug 
-    ? followUps.filter(followUp => followUp.link)
+  const filteredFollowUps = slug
+    ? followUps.filter((followUp) => followUp.link)
     : followUps;
 
   res.json(filteredFollowUps);
@@ -128,66 +107,55 @@ export const getFollowUpById = async (req, res) => {
 
 export const updateFollowUp = async (req, res) => {
   const { id } = req.params;
-  const { 
-    link, 
-    approved, 
-    enabled, 
-    subject, 
-    message, 
-    delayInMinutes, 
-    img, 
+  const {
+    link,
+    enabled,
+    approved,
+    subject,
+    delayInMinutes,
+    img,
     destinationUrl,
     followUpType,
-    scheduledTime,
-    scheduledFrequency,
-    scheduledDayOfWeek
+    sendHour,
+    scheduleType,
   } = req.body;
+
+  if (!followUpType) {
+    return res.status(400).json({ followUpType: 'Follow-up type is required' });
+  }
+
+  if (!link) {
+    return res.status(400).json({ link: 'Link is required' });
+  }
 
   // Validate casual follow-up fields
   if (followUpType === 'casual' || !followUpType) {
-    if (delayInMinutes !== undefined && (delayInMinutes < 0 || delayInMinutes > 1440)) {
-      return res.status(400).json({ delayInMinutes: 'Delay must be between 0 and 1440 minutes' });
+    if (delayInMinutes < 0 || delayInMinutes > 1440) {
+      return res
+        .status(400)
+        .json({ delayInMinutes: 'Delay must be between 0 and 1440 minutes' });
     }
   }
 
-  // Validate scheduled follow-up fields
-  if (followUpType === 'scheduled') {
-    if (!scheduledTime) {
-      return res.status(400).json({ scheduledTime: 'Scheduled time is required for scheduled follow-ups' });
-    }
-    
-    // Validate time format (HH:MM)
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(scheduledTime)) {
-      return res.status(400).json({ scheduledTime: 'Time must be in HH:MM format (e.g., 20:00)' });
-    }
-
-    if (!scheduledFrequency || !['daily', 'weekly'].includes(scheduledFrequency)) {
-      return res.status(400).json({ scheduledFrequency: 'Frequency must be either "daily" or "weekly"' });
-    }
-
-    if (scheduledFrequency === 'weekly') {
-      if (scheduledDayOfWeek === undefined || scheduledDayOfWeek < 0 || scheduledDayOfWeek > 6) {
-        return res.status(400).json({ scheduledDayOfWeek: 'Day of week must be between 0 (Sunday) and 6 (Saturday)' });
-      }
+  if(followUpType === 'scheduled') {
+    if(!sendHour) {
+      return res.status(400).json({ sendHour: 'Send hour is required for scheduled follow-ups' });
     }
   }
 
   const followUp = await followupModel.findByIdAndUpdate(
     id,
-    { 
-      link, 
-      approved, 
-      enabled, 
-      subject, 
-      message, 
-      delayInMinutes, 
-      img, 
+    {
+      link,
+      approved,
+      enabled,
+      subject,
+      delayInMinutes,
+      img,
       destinationUrl,
       followUpType,
-      scheduledTime,
-      scheduledFrequency,
-      scheduledDayOfWeek
+      sendHour,
+      scheduleType,
     },
     { new: true }
   );

@@ -1,59 +1,93 @@
-/* eslint-disable no-undef */
+// crons/followup.cron.js
 import cron from 'node-cron';
+import { sendFollowupEmail } from '../utils/emailSend.js';
 import followupModel from '../models/followup.model.js';
 import userModel from '../models/user.model.js';
 import emailModel from '../models/email.model.js';
-import { sendFollowupEmail } from '../utils/emailSend.js';
-import { isTimeToSendScheduledFollowUp } from '../utils/followUpUtils.js';
 
-// Run every minute for both casual and scheduled follow-ups
 cron.schedule('* * * * *', async () => {
   const now = new Date();
-  // console.log('Running follow-up cron...');
+  const currentHour = now.getHours();
 
-  // Get all active follow-ups
-  const followUps = await followupModel.find({ 
-    approved: true, 
-    enabled: true 
-  });
+  const currentDay = now.getDay(); // 0 = Sunday
+  const currentDate = now.getDate();
+
+  console.log(
+    `[${new Date().toLocaleTimeString()}] 🔄 Follow-up cron job running`
+  );
+
+  const followUps = await followupModel.find({ approved: true, enabled: true });
 
   for (const followUp of followUps) {
     const user = await userModel.findById(followUp.user);
-    
+    const emails = await emailModel.find({
+      link: followUp.link,
+      followUpSent: { $ne: true },
+    });
+   
     if (followUp.followUpType === 'casual') {
-      // Handle casual follow-ups
-      const emails = await emailModel.find({ link: followUp.link });
-
       for (const emailEntry of emails) {
-        const timePassedInMinutes = (now - new Date(emailEntry.visitedAt)) / 60000; // minutes
-
+        const timePassedInMinutes =
+          (now - new Date(emailEntry.visitedAt)) / 60000;
         if (
-          (followUp.delayInMinutes === 0 || timePassedInMinutes >= followUp.delayInMinutes) &&
+          (followUp.delayInMinutes === 0 ||
+            timePassedInMinutes >= followUp.delayInMinutes) &&
           !emailEntry.followUpSent
         ) {
-          await sendFollowupEmail(user.username, emailEntry.email, followUp.subject, followUp.message, followUp.img, followUp.destinationUrl);
-
+          await sendFollowupEmail(
+            user.username,
+            emailEntry.email,
+            followUp.subject,
+            followUp.message,
+            followUp.img,
+            followUp.destinationUrl
+          );
           emailEntry.followUpSent = true;
+          emailEntry.followUpSentAt = new Date();
           await emailEntry.save();
-          console.log(`Sent casual follow-up to ${emailEntry.email}`);
+          console.log(`✅ Casual follow-up sent to ${emailEntry.email}`);
         }
       }
-    } 
-    else if (followUp.followUpType === 'scheduled') {
-      // Handle scheduled follow-ups
-      if (isTimeToSendScheduledFollowUp(followUp.scheduledTime, followUp.scheduledFrequency, followUp.scheduledDayOfWeek, now)) {
-        const emails = await emailModel.find({ 
-          link: followUp.link,
-          scheduledFollowUpSent: { $ne: true }
-        });
+    }
 
-        for (const emailEntry of emails) {
-          await sendFollowupEmail(user.username, emailEntry.email, followUp.subject, followUp.message, followUp.img, followUp.destinationUrl);
-          
-          emailEntry.scheduledFollowUpSent = true;
-          emailEntry.scheduledFollowUpDate = now;
+    if (followUp.followUpType === 'scheduled') {
+      const isScheduledTime =
+        followUp.sendHour === currentHour &&
+        (followUp.scheduleType === 'daily' ||
+          (followUp.scheduleType === 'weekly' && currentDay === 0) || // Sunday
+          (followUp.scheduleType === 'monthly' && currentDate === 1)); // 1st of month
+
+
+      if (!isScheduledTime) continue;
+
+      for (const emailEntry of emails) {
+        const visitedAt = new Date(emailEntry.visitedAt);
+        // const lastSentDate = emailEntry.followUpSentAt || null;
+
+        // Skip if already sent
+        if (emailEntry.followUpSent) continue;
+
+        // Logic to decide if it should be sent today
+        const shouldSend =
+          followUp.scheduleType === 'daily' ||
+          (followUp.scheduleType === 'weekly' &&
+            visitedAt < now.setDate(now.getDate() - 7)) ||
+          (followUp.scheduleType === 'monthly' &&
+            visitedAt.getMonth() < now.getMonth());
+
+        if (shouldSend) {
+          await sendFollowupEmail(
+            user.username,
+            emailEntry.email,
+            followUp.subject,
+            followUp.message,
+            followUp.img,
+            followUp.destinationUrl
+          );
+          emailEntry.followUpSent = true;
+          emailEntry.followUpSentAt = new Date();
           await emailEntry.save();
-          console.log(`Sent scheduled follow-up to ${emailEntry.email}`);
+          console.log(`📧 Scheduled follow-up sent to ${emailEntry.email}`);
         }
       }
     }

@@ -112,6 +112,7 @@ export const getLinkBySlug = async (req, res, next) => {
       email: v.email,
       visitedAt: v.visitedAt,
       followUpSent: v.followUpSent,
+      followUpSentAt: v.followUpSentAt,
     }));
 
     if (exportAs === 'csv') {

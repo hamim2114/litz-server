@@ -63,6 +63,7 @@ export const recordEmail = async (req, res) => {
                 followUp.destinationUrl,
               );
               emailEntry.followUpSent = true;
+              emailEntry.followUpSentAt = new Date();
               await emailEntry.save();
             }
           }
