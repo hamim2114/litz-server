@@ -18,8 +18,9 @@ const followUpSchema = new mongoose.Schema({
 
   // For scheduled
   scheduleType: { type: String, enum: ['daily', 'weekly', 'monthly'] },
-  sendHour: { type: Number }, // 0-23 (hour of the day)
-
+  sendHour: { type: Number, min: 0, max: 23 }, // 24hr clock
+  scheduleDay: { type: Number, min: 0, max: 6 }, // 0 = Sunday (for weekly)
+  scheduleDate: { type: Number, min: 1, max: 31 }, // 1 to 31 (for monthly)
 }, {
   timestamps: true
 });

@@ -6,13 +6,15 @@ import mongoose from 'mongoose';
 import userModel from '../models/user.model.js';
 
 export const createLink = async (req, res, next) => {
-  const { slug, destinationUrl, googleLogin, type, isActive, image } = req.body;
+  const { slug, destinationUrl, googleLogin, type, isActive, image, buttonName, buttonColor } = req.body;
   try {
     const link = new linkModel({
       slug,
       destinationUrl,
       googleLogin,
       type,
+      buttonName,
+      buttonColor,
       isActive,
       image,
       user: req.user.id,
@@ -135,6 +137,7 @@ export const getLinkBySlug = async (req, res, next) => {
       isActive: link.isActive,
       image: link.image,
       buttonColor: link.buttonColor,
+      buttonName: link.buttonName,
       description: link.description,
       emailList,
       createdAt: link.createdAt,

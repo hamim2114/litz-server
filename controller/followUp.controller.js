@@ -12,6 +12,8 @@ export const requestFollowUp = async (req, res) => {
     followUpType,
     sendHour,
     scheduleType,
+    scheduleDay,
+    scheduleDate,
   } = req.body;
 
   //if already exist in the database
@@ -48,6 +50,8 @@ export const requestFollowUp = async (req, res) => {
     followUpType,
     sendHour,
     scheduleType,
+    scheduleDay,
+    scheduleDate,
   });
 
   await followUp.save();
@@ -118,6 +122,8 @@ export const updateFollowUp = async (req, res) => {
     followUpType,
     sendHour,
     scheduleType,
+    scheduleDay,
+    scheduleDate,
   } = req.body;
 
   if (!followUpType) {
@@ -156,6 +162,8 @@ export const updateFollowUp = async (req, res) => {
       followUpType,
       sendHour,
       scheduleType,
+      scheduleDay,
+      scheduleDate,
     },
     { new: true }
   );
